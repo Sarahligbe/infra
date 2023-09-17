@@ -1,0 +1,117 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ .Values.statefulset.name }}-scripts
+  namespace: {{ .Values.statefulset.name }}
+data: 
+  daemon-init.sh: |
+    #!/bin/bash
+
+    set -e
+
+    apt update && apt install -y curl jq
+
+    start() {
+      ./Nethermind.Runner \
+        --config gnosis \
+        --datadir /data/gnosis \
+        --JsonRpc.Host=0.0.0.0 \
+        --JsonRpc.Port=8545 \
+        --JsonRpc.JwtSecretFile=/jwt.hex \
+        --JsonRpc.EnabledModules=eth,net,web3,trace,subscribe,txpool,health,rpc \
+        --JsonRpc.WebSocketsPort=8546 \
+        --JsonRpc.EnginePort 8551 \
+        --Init.WebSocketsEnabled=true \
+        --HealthChecks.Enabled=true \
+        --Metrics.CountersEnabled=true &
+      PID="$!"
+    }
+
+    stop() {
+      echo "Catching signal and sending to PID: $PID" && kill $PID
+      while $(kill -0 $PID 2>/dev/null); do sleep 1; done
+    }
+
+    trap 'stop' TERM INT
+    start
+    wait $PID
+  daemon-liveness.sh: |
+    #!/bin/bash
+
+    DISABLE_LIVENESS_PROBE=/data/disable_liveness
+
+    if [[ -f "$DISABLE_LIVENESS_PROBE" ]]; then
+      echo "liveness probe disabled"
+      exit 0
+    fi
+
+    FILE=/data/.block_number
+
+    ETH_BLOCK_NUMBER=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+
+    CURRENT_BLOCK_NUMBER_HEX=$(echo $ETH_BLOCK_NUMBER | jq -r '.result')
+    CURRENT_BLOCK_NUMBER=$(($CURRENT_BLOCK_NUMBER_HEX))
+
+    if [[ ! -f "$FILE" ]]; then
+      echo $CURRENT_BLOCK_NUMBER > $FILE
+      exit 1
+    fi
+
+    PREVIOUS_BLOCK_NUMBER=$(cat $FILE)
+    echo $CURRENT_BLOCK_NUMBER > $FILE
+
+    if (( $CURRENT_BLOCK_NUMBER > $PREVIOUS_BLOCK_NUMBER )); then
+      echo "daemon is running"
+      exit 0
+    fi
+
+    echo "daemon is stalled"
+    exit 1
+  daemon-readiness.sh: |
+    #!/bin/bash
+
+    DISABLE_READINESS_PROBE=/root/disable_readiness
+
+    if [[ -f "$DISABLE_READINESS_PROBE" ]]; then
+      echo "readiness probe disabled"
+      exit 0
+    fi
+
+    curl -sf http://localhost:8545/health && exit 0 || exit 1
+  daemon-startup.sh: |
+    #!/bin/bash
+
+    DISABLE_STARTUP_PROBE=/data/disable_startup
+
+    if [[ -f "$DISABLE_STARTUP_PROBE" ]]; then
+      echo "startup probe disabled"
+      exit 0
+    fi
+
+    NET_LISTENING=$(curl -sf -d '{"jsonrpc":"2.0","method":"net_listening","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+
+    LISTENING=$(echo $NET_LISTENING | jq -r '.result')
+
+    if [[ $LISTENING == true ]]; then
+      echo "daemon is listening"
+      exit 0
+    fi
+
+    echo "daemon is not listening"
+    exit 1
+  jwt.hex: |
+    f6f8f87f9104df70e9503e918b210160121a8607a6692fa785508f5eb17441b4
+  daemon-beacon-readiness.sh: |
+    #!/bin/bash
+
+    SYNCING=$(curl -sf http://localhost:5052/eth/v1/node/syncing) || exit 1
+    IS_SYNCING=$(echo "$SYNCING" | jq -r '.data.is_syncing')
+
+    if [[ $IS_SYNCING == false ]]; then
+      echo "daemon-beacon is synced"
+      exit 0
+    fi
+
+    echo "daemon-beacon is still syncing"
+    exit 1

@@ -1,0 +1,736 @@
+chain: mainnet
+
+api_port: 3000
+
+api:
+  avalanche:
+    tier: api
+    image: "shapeshiftdao/unchained-avalanche-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  bitcoin:
+    tier: api
+    image: "shapeshiftdao/unchained-bitcoin-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  ethereum:
+    tier: api
+    image: "shapeshiftdao/unchained-ethereum-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  cosmos:
+    tier: api
+    image: "shapeshiftdao/unchained-cosmos-api:latest"
+    coinstack: go
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: LCD_URL
+      value:
+    - name: GRPC_URL
+      value:
+    - name: WS_URL
+      value:
+    - name: RPC_URL
+      value:
+  dogecoin:
+    tier: api
+    image: "shapeshiftdao/unchained-dogecoin-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  litecoin:
+    tier: api
+    image: "shapeshiftdao/unchained-litecoin-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  bitcoincash:
+    tier: api
+    image: "shapeshiftdao/unchained-bitcoincash-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  thorchain:
+    tier: api
+    image: "shapeshiftdao/unchained-thorchain-api:latest"
+    coinstack: go
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: LCD_URL
+      value:
+    - name: WS_URL
+      value:
+    - name: RPC_URL
+      value:
+  optimism:
+    tier: api
+    image: "shapeshiftdao/unchained-optimism-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 500Mi
+    requests:
+      cpu: 250m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  bnbsmartchain:
+    tier: api
+    image: "shapeshiftdao/unchained-bnbsmartchain-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 1
+      memory: 500Mi
+    requests:
+      cpu: 500m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  polygon:
+    tier: api
+    image: "shapeshiftdao/unchained-polygon-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 1
+      memory: 500Mi
+    requests:
+      cpu: 500m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+  gnosis:
+    tier: api
+    image: "shapeshiftdao/unchained-gnosis-api:latest"
+    coinstack: node
+    autoscaling: true
+    replicas: 2
+    max_replicas: 6
+    cpu_threshold: 75
+    limits:
+      cpu: 500m
+      memory: 250Mi
+    requests:
+      cpu: 500m
+      memory: 250Mi
+    env:
+    - name: INDEXER_URL
+      value:
+    - name: INDEXER_WS_URL
+      value:
+    - name: LOG_LEVEL
+      value:
+    - name: NETWORK
+      value:
+    - name: RPC_URL
+      value:
+
+statefulset:
+  avalanche:
+    name: avalanche
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "avaplatform/avalanchego:v1.10.9"
+        limits:
+          cpu: 2
+          memory: 12Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+        ports:
+        - name: daemon-rpc
+          containerPort: 9650
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 6Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+  bitcoin:
+    name: bitcoin
+    replicas: 3
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/bitcoin-core:25.0"
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 1
+        ports:
+        - name: daemon-rpc
+          containerPort: 8332
+        storage_size: 650Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 32Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+  ethereum:
+    name: ethereum
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "ethereum/client-go:v1.12.2"
+        limits:
+          cpu: 2
+          memory: 32Gi
+        requests:
+          cpu: 1
+        ports:
+        - name: daemon-rpc
+          containerPort: 8545
+        - name: daemon-ws
+          containerPort: 8546
+        - name: daemon-beacon
+          containerPort: 8551
+        storage_size: 3000Gi
+        env:
+        - name: NETWORK
+          value: mainnet
+      - name: daemon-beacon
+        image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v4.0.8"
+        args: [
+            '--datadir',
+            '/data',
+            '--execution-endpoint',
+            'http://localhost:8551',
+            '--jwt-secret',
+            '/jwt.hex',
+            '--accept-terms-of-use',
+          ]
+        limits:
+          cpu: 2
+          memory: 12Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 16Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+  cosmos:
+    name: cosmos
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/cosmoshub:v11.0.0"
+        ports:
+        - name: daemon-api
+          containerPort: 1317
+        - name: daemon-rpc
+          containerPort: 26657
+        limits:
+          cpu: 2
+          memory: 32Gi
+        requests:
+          cpu: 1
+        storage_size: 3500Gi
+  dogecoin:
+    name: dogecoin
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/dogecoin:1.14.6"
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 1
+        ports:
+        - name: daemon-rpc
+          containerPort: 8332
+        env:
+        - name: NETWORK
+          value: mainnet
+        storage_size: 250Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 16Gi
+        requests:
+          cpu: 1
+        storage_size: 250Gi
+  litecoin:
+    name: litecoin
+    replicas: 3
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/litecoin-core:v0.21.2.2"
+        ports:
+        - name: daemon-rpc
+          containerPort: 8332
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 1
+        storage_size: 250Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 12Gi
+        requests:
+          cpu: 1
+        storage_size: 250Gi
+  bitcoincash:
+    name: bitcoincash
+    replicas: 3
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/bitcoin-cash-node:26.1.0"
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 1
+        ports:
+        - name: daemon-rpc
+          containerPort: 8332
+        env:
+        - name: SNAPSHOT
+          value: 'https://pub-c0627345c16f47ab858c9469133073a8.r2.dev/geth-20230719.tar.lz4'
+        storage_size: 250Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 1
+        storage_size: 250Gi
+  thorchain:
+    name: thorchain
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "registry.gitlab.com/thorchain/thornode:mainnet-1.120.1"
+        ports:
+        - name: daemon-api
+          containerPort: 1317
+        - name: daemon-rpc
+          containerPort: 27147
+        env:
+        - name: NETWORK
+          value: mainnet
+        - name: CHAIN_ID
+          value: 'thorchain-mainnet-v1'
+        limits:
+          cpu: 2
+          memory: 12Gi
+        requests:
+          cpu: 1
+        storage_size: 2500Gi
+      - name: timescaledb
+        image: "timescale/timescaledb:2.2.0-pg13"
+        env:
+        - name: POSTGRES_DB
+          value: 'midgard'
+        - name: POSTGRES_USER
+          value: 'midgard'
+        - name: POSTGRES_PASSWORD
+          value: 'password'
+        - name: PGDATA
+          value: '/var/lib/postgresql/data/pgdata'
+        ports:
+        - name: postgres
+          containerPort: 5432
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+      - name: indexer
+        image: "registry.gitlab.com/thorchain/midgard:2.16.1"
+        env:
+        - name: MIDGARD_BLOCKSTORE_LOCAL
+          value: '/blockstore'
+        - name: MIDGARD_BLOCKSTORE_REMOTE
+          value: 'https://storage.googleapis.com/public-snapshots-ninerealms/midgard-blockstore/mainnet/v2/'
+        ports:
+        - name: midgard
+          containerPort: 8080      
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 250m
+        storage_size: 100Gi
+  optimism:
+    name: optimism
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:v1.101200.0"
+        env:
+        - name: SNAPSHOT
+          value: 'https://storage.googleapis.com/oplabs-mainnet-data/mainnet-bedrock.tar'
+        ports:
+        - name: daemon-rpc
+          containerPort: 8545
+        - name: daemon-ws
+          containerPort: 8546
+        - name: daemon-auth
+          containerPort: 8551
+        limits:
+          cpu: 4
+          memory: 24Gi
+        requests:
+          cpu: 2
+        storage_size: 1000Gi
+      - name: op-node
+        image: "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:v1.1.3"
+        ports:
+        - name: 'op-node-rpc'
+          containerPort: 9545
+        env:
+        - name: NETWORK 
+          value: mainnet
+        - name: L1_RPC_ENDPOINT
+          value: `http://ethereum-svc.ethereum.svc.cluster.local:8545`
+        limits:
+          cpu: 2
+          memory: 2Gi
+        requests:
+          cpu: 1
+        storage_size: 100Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:optimism-7c8d054"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 8Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+  bnbsmartchain:
+    name: bnbsmartchain
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "shapeshiftdao/bnb-smart-chain:v1.2.11"
+        limits:
+          cpu: 8
+          memory: 72Gi
+        requests:
+          cpu: 4
+          memory: 48Gi
+        ports:
+        - name: daemon-rpc
+          containerPort: 8545
+        - name: daemon-ws
+          containerPort: 8546
+        storage_size: 4500Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 4
+          memory: 24Gi
+        requests:
+          cpu: 2
+        storage_size: 1000Gi
+  polygon:
+    name: polygon
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "0xpolygon/bor:0.4.0"
+        ports:
+        - name: daemon-rpc
+          containerPort: 8545
+        - name: daemon-ws
+          containerPort: 8546
+        env:
+        - name: NETWORK
+          value: mainnet
+        - name: SNAPSHOT
+          value: 'https://snapshot-download.polygon.technology/snapdown.sh'
+        limits:
+          cpu: 8
+          memory: 48Gi
+        requests:
+          cpu: 4
+          memory: 32Gi
+        storage_size: 4000Gi
+      - name: heimdall
+        image: "0xpolygon/heimdall:0.3.4"
+        ports:
+        - name: heimdall-api
+          containerPort: 1317
+        - name: heimdall-rpc
+          containerPort:
+        env:
+        - name: ETH_RPC_URL
+          value: 'http://ethereum-svc.ethereum.svc.cluster.local:8545'
+        - name: SNAPSHOT
+          value: 'https://snapshot-download.polygon.technology/snapdown.sh'
+        limits:
+          cpu: 2
+          memory: 2Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 4
+          memory: 24Gi
+        requests:
+          cpu: 2
+        storage_size: 750Gi
+  gnosis:
+    name: gnosis
+    replicas: 2
+    containers:
+      - name: daemon
+        image: "nethermind/nethermind:1.20.1"
+        ports:
+        - name: daemon-rpc
+          containerPort: 8545
+        - name: daemon-ws
+          containerPort: 8546
+        - name: daemon-beacon
+          containerPort: 8551
+        limits:
+          cpu: 2
+          memory: 6Gi
+        requests:
+          cpu: 1
+        storage_size: 1000Gi
+      - name: daemon-beacon
+        image: "sigp/lighthouse:v4.3.0"
+        command: [
+            '/usr/local/bin/lighthouse',
+            'beacon_node',
+            '--network=gnosis',
+            '--disable-upnp',
+            '--datadir=/data',
+            '--http',
+            '--execution-endpoint=http://localhost:8551',
+            '--execution-jwt=/jwt.hex',
+            '--checkpoint-sync-url=https://checkpoint.gnosischain.com/',
+          ]
+        limits:
+          cpu: 2
+          memory: 4Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+      - name: indexer
+        image: "shapeshiftdao/unchained-blockbook:gnosis-7fc9809"
+        command: {{ .Values.indexerCommand }}
+        limits:
+          cpu: 2
+          memory: 24Gi
+        requests:
+          cpu: 1
+        storage_size: 500Gi
+
+indexerCommand: [
+          '/bin/blockbook',
+          '-blockchaincfg=/config.json',
+          '-datadir=/data',
+          '-sync',
+          '-public=:8001',
+          '-enablesubnewtx',
+          '-logtostderr',
+          '-workers=1'
+        ]
+
+
+      
+    

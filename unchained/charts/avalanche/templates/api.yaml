@@ -1,0 +1,63 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.api.name }}
+  name: {{ .Values.api.name }}
+  labels:
+    app: {{ .Values.api.name }}
+    coinstack: {{ .Values.api.coinstack }}
+    asset: {{ .Values.api.name }}
+    tier: {{ .Values.api.tier }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.api.name }}
+      coinstack: {{ .Values.api.coinstack }}
+      asset: {{ .Values.api.name }}
+      tier: {{ .Values.api.tier }}
+  replicas: {{ .Values.api.replicas }}
+  template:
+    metadata:
+      namespace: {{ .Values.api.name }}
+      labels: 
+        app: {{ .Values.api.name }}
+        coinstack: {{ .Values.api.coinstack }}
+        asset: {{ .Values.api.name }}
+        tier: {{ .Values.api.tier }}
+    spec:
+      containers:
+      - name: {{ .Values.api.name }}-{{ .Values.api.tier }}
+        image: {{ .Values.api.image }}
+        command: ['node', `dist/{{ .Values.api.name }}/api/src/app.js`] 
+        env:
+        {{- range $value := .Values.api.env }}
+        - name: {{ $value.name }}
+          value: {{ $value.value | quote }}
+        {{ end }}
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          limits:
+            cpu: {{ $value.limits.cpu }}
+            memory: {{ $value.limits.memory }}
+          requests:
+            cpu: {{ $value.requests.cpu }}
+            memory: {{ $value.requests.memory }}
+        readinessProbe:
+          httpGet:
+          - path: '/health'
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        livenessProbe:
+          httpGet:
+          - path: '/health'
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1

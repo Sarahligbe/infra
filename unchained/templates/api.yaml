@@ -1,0 +1,76 @@
+{{- range $key, $value := .Values.api }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ $key }}
+  name: {{ $key }}
+  labels:
+    app: {{ $key }}
+    coinstack: {{ $value.coinstack }}
+    asset: {{ $key }}
+    tier: {{ $value.tier }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ $key }}
+      coinstack: {{ $value.coinstack }}
+      asset: {{ $key }}
+      tier: {{ $value.tier }}
+  replicas: {{ $value.replicas }}
+  template:
+    metadata:
+      namespace: {{ $key }}
+      labels: 
+        app: {{ $key }}
+        coinstack: {{ $value.coinstack }}
+        asset: {{ $key }}
+        tier: {{ $value.tier }}
+    spec:
+      containers:
+      - name: {{ $key }}-{{ $value.tier }}
+        image: {{ $value.image }}
+        {{ if eq $value.coinstack 'go' }}
+        args: ['-swagger', 'swagger.json'] #for go nodes
+        {{ else }}
+        command: ['node', `dist/{{ $key }}/api/src/app.js`] #for node nodes
+        {{ end }}
+        env:
+        {{- range $key, $value := .Values.api }}
+        - name: {{ $value.env.name }}
+          value: {{ $value.env.value | quote }}
+        {{ end }}
+        {{ if or (eq $key 'gnosis') (eq $key 'ethereum') (eq $key 'polygon') (eq $key 'bnbsmartchain') (eq $key 'optimism') }}
+        - name: ETHERSCAN_API_KEY
+          valueFrom:
+            secretKeyRef: 
+              name: secret
+              key: ETHERSCAN_API_KEY
+        {{ end }}
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          limits:
+            cpu: {{ $value.limits.cpu }}
+            memory: {{ $value.limits.memory }}
+          requests:
+            cpu: {{ $value.requests.cpu }}
+            memory: {{ $value.requests.memory }}
+        readinessProbe:
+          httpGet:
+          - path: '/health'
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+        livenessProbe:
+          httpGet:
+          - path: '/health'
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3
+          successThreshold: 1
+{{ end }}

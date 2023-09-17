@@ -1,0 +1,10 @@
+global:
+  indexerCommand: [
+          '/bin/blockbook',
+          '-blockchaincfg=/config.json',
+          '-datadir=/data',
+          '-sync',
+          '-public=:8001',
+          '-enablesubnewtx',
+          '-logtostderr',
+        ]

@@ -1,0 +1,345 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ .Values.statefulset.name }}-scripts
+  namespace: {{ .Values.statefulset.name }}
+data: 
+  daemon-init.sh: |
+    #!/bin/sh
+
+    set -e
+
+    apk add bash curl jq wget zstd tar pv
+
+    [ "$DEBUG" = "true" ] && set -x
+
+    DATA_DIR=/data
+    CHAINDATA_DIR=$DATA_DIR/bor/chaindata
+
+    # shapshots provided by: https://snapshot.polygon.technology/
+    if [ -n "$SNAPSHOT" ] && [ ! -d "$CHAINDATA_DIR" ]; then
+      rm -rf $DATA_DIR/bor;
+      mkdir -p $CHAINDATA_DIR;
+      curl -L $SNAPSHOT | bash -s -- --network mainnet --client bor --extract-dir $CHAINDATA_DIR --validate-checksum true
+    fi
+
+    if [ ! -f "$DATA_DIR/bor/genesis.json" ]; then
+      # copy genesis file
+      cp /var/lib/bor/genesis-mainnet-v1.json $DATA_DIR/bor/genesis.json
+    fi
+
+    start() {
+      bor server \
+        --chain $DATA_DIR/bor/genesis.json \
+        --syncmode full \
+        --datadir /data \
+        --bootnodes enode://b8f1cc9c5d4403703fbf377116469667d2b1823c0daf16b7250aa576bacf399e42c3930ccfcb02c5df6879565a2b8931335565f0e8d3f8e72385ecf4a4bf160a@3.36.224.80:30303", "enode://8729e0c825f3d9cad382555f3e46dcff21af323e89025a0e6312df541f4a9e73abfa562d64906f5e59c51fe6f0501b3e61b07979606c56329c020ed739910759@54.194.245.5:30303 \
+        --maxpeers 150 \
+        --http \
+        --http.addr 0.0.0.0 \
+        --http.api eth,net,web3,debug,txpool,bor \
+        --http.vhosts '*' \
+        --http.corsdomain '*' \
+        --ws \
+        --ws.addr 0.0.0.0 \
+        --ws.api eth,net,web3,debug,txpool,bor \
+        --ws.origins '*' \
+        --txlookuplimit 0 \
+        --cache 8192 \
+        --nat none &
+      PID="$!"
+    }
+
+    stop() {
+      echo "Catching signal and sending to PID: $PID" && kill -2 $PID
+      while $(kill -0 $PID 2>/dev/null); do sleep 1; done
+    }
+
+    trap 'stop' TERM INT
+    start
+    wait $PID
+  daemon-liveness: |
+    #!/bin/bash
+
+    DISABLE_LIVENESS_PROBE=/data/disable_liveness
+
+    if [[ -f "$DISABLE_LIVENESS_PROBE" ]]; then
+      echo "liveness probe disabled"
+      exit 0
+    fi
+
+    FILE=/data/.block_number
+
+    ETH_BLOCK_NUMBER=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+
+    CURRENT_BLOCK_NUMBER_HEX=$(echo $ETH_BLOCK_NUMBER | jq -r '.result')
+    CURRENT_BLOCK_NUMBER=$(($CURRENT_BLOCK_NUMBER_HEX))
+
+    if [[ ! -f "$FILE" ]]; then
+      echo $CURRENT_BLOCK_NUMBER > $FILE
+      exit 1
+    fi
+
+    PREVIOUS_BLOCK_NUMBER=$(cat $FILE)
+    echo $CURRENT_BLOCK_NUMBER > $FILE
+
+    if (( $CURRENT_BLOCK_NUMBER > $PREVIOUS_BLOCK_NUMBER )); then
+      echo "daemon is running"
+      exit 0
+    fi
+
+    echo "daemon is stalled"
+    exit 1
+  daemon-readiness.sh: |
+    #!/bin/bash
+
+    DISABLE_READINESS_PROBE=/data/disable_readiness
+
+    if [[ -f "$DISABLE_READINESS_PROBE" ]]; then
+      echo "readiness probe disabled"
+      exit 0
+    fi
+
+    source /evm.sh
+
+    BLOCK_HEIGHT_TOLERANCE=15
+
+    ETH_SYNCING=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+    NET_PEER_COUNT=$(curl -sf -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+
+    SYNCING=$(echo $ETH_SYNCING | jq -r '.result')
+    PEER_COUNT_HEX=$(echo $NET_PEER_COUNT | jq -r '.result')
+    PEER_COUNT=$(($PEER_COUNT_HEX))
+
+    if [[ $SYNCING == false ]]; then
+      if (( $PEER_COUNT > 0 )); then
+        eth_blockNumber=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+        current_block_number_hex=$(echo $eth_blockNumber | jq -r '.result')
+        current_block_number=$(($current_block_number_hex))
+
+        best_reference_block_number=$(get_best_reference_block_number https://polygon-rpc.com https://polygon-bor.publicnode.com https://polygon-mainnet.g.alchemy.com/v2/demo)
+
+        # if node is reporting synced, double check against reference nodes
+        reference_validation daemon $current_block_number $best_reference_block_number $BLOCK_HEIGHT_TOLERANCE
+
+        echo "daemon is synced, with $PEER_COUNT peers"
+        exit 0
+      fi
+
+      echo "daemon is synced, but has no peers"
+      exit 1
+    fi
+
+    echo "daemon is still syncing"
+    exit 1
+  daemon-startup.sh: |
+    #!/bin/bash
+
+    DISABLE_STARTUP_PROBE=/data/disable_startup
+
+    if [[ -f "$DISABLE_STARTUP_PROBE" ]]; then
+      echo "startup probe disabled"
+      exit 0
+    fi
+
+    NET_LISTENING=$(curl -sf -d '{"jsonrpc":"2.0","method":"net_listening","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+    NET_PEER_COUNT=$(curl -sf -d '{"jsonrpc":"2.0","method":"net_peerCount","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:8545) || exit 1
+
+    LISTENING=$(echo $NET_LISTENING | jq -r '.result')
+    PEER_COUNT_HEX=$(echo $NET_PEER_COUNT | jq -r '.result')
+    PEER_COUNT=$(($PEER_COUNT_HEX))
+
+    if [[ $LISTENING == true ]]; then
+      if (( $PEER_COUNT > 0 )); then
+        echo "daemon is listening, with $PEER_COUNT peers"
+        exit 0
+      fi
+
+      echo "daemon is listening, but has no peers"
+      exit 1
+    fi
+
+    echo "daemon is not listening"
+    exit 1
+  heimdall-init.sh: |
+    #!/bin/sh
+
+    set -e
+
+    apk add bash curl jq wget zstd pv
+
+    [ "$DEBUG" = "true" ] && set -x
+
+    HOME_DIR=/root/.heimdalld
+    CONFIG_DIR=$HOME_DIR/config
+
+    # shapshots provided by: https://snapshot.polygon.technology/
+    if [ -n "$SNAPSHOT" ] && [ ! -f "$HOME_DIR/data/priv_validator_state.json" ]; then
+      rm -rf $HOME_DIR/data;
+      mkdir -p $HOME_DIR/data;
+      curl -L $SNAPSHOT | bash -s -- --network mainnet --client heimdall --extract-dir $HOME_DIR/data --validate-checksum true
+    fi
+
+    if [ ! -d "$CONFIG_DIR" ]; then
+      # init chain
+      heimdalld init --home $HOME_DIR
+
+      # overwrite genesis file
+      cp /var/lib/heimdall/genesis-mainnet-v1.json $CONFIG_DIR/genesis.json
+    fi
+
+    start() {
+      heimdalld start \
+        --home $HOME_DIR \
+        --rpc.laddr tcp://0.0.0.0:26657 \
+        --bor_rpc_url http://localhost:8545 \
+        --eth_rpc_url $ETH_RPC_URL \
+        --p2p.seeds '1500161dd491b67fb1ac81868952be49e2509c9f@52.78.36.216:26656,dd4a3f1750af5765266231b9d8ac764599921736@3.36.224.80:26656,8ea4f592ad6cc38d7532aff418d1fb97052463af@34.240.245.39:26656,e772e1fb8c3492a9570a377a5eafdb1dc53cd778@54.194.245.5:26656,6726b826df45ac8e9afb4bdb2469c7771bd797f1@52.209.21.164:26656' \
+        --rest-server \
+        --node "tcp://localhost:26657" &
+      PID="$!"
+    }
+
+    stop() {
+      echo "Catching signal and sending to PID: $PID" && kill $PID
+      while $(kill -0 $PID 2>/dev/null); do sleep 1; done
+    }
+
+    trap 'stop' TERM INT
+    start
+    wait $PID
+  heimdall-liveness.sh: |
+    #!/bin/bash
+
+    DISABLE_LIVENESS_PROBE=/root/disable_liveness
+
+    if [[ -f "$DISABLE_LIVENESS_PROBE" ]]; then
+      echo "liveness probe disabled"
+      exit 0
+    fi
+
+    FILE=/root/.latest_block_height
+
+    STATUS=$(curl -sf http://localhost:26657/status) || exit 1
+
+    LATEST_BLOCK_HEIGHT=$(echo $STATUS | jq -r '.result.sync_info.latest_block_height')
+
+    if [[ ! -f "$FILE" ]]; then
+      echo $LATEST_BLOCK_HEIGHT > $FILE
+      exit 1
+    fi
+
+    PREVIOUS_BLOCK_HEIGHT=$(cat $FILE)
+    echo $LATEST_BLOCK_HEIGHT > $FILE
+
+    if (( $LATEST_BLOCK_HEIGHT > $PREVIOUS_BLOCK_HEIGHT )); then
+      echo "heimdall is running"
+      exit 0
+    fi
+
+    echo "heimdall is stalled"
+    exit 1
+  heimdall-readiness.sh: |
+    #!/bin/bash
+
+    DISABLE_READINESS_PROBE=/root/disable_readiness
+
+    if [[ -f "$DISABLE_READINESS_PROBE" ]]; then
+      echo "readiness probe disabled"
+      exit 0
+    fi
+
+    SYNCING=$(curl -sf http://localhost:1317/syncing) || exit 1
+    NET_INFO=$(curl -sf http://localhost:26657/net_info) || exit 1
+    STATUS=$(curl -sf http://localhost:26657/status) || exit 1
+
+    IS_SYNCING=$(echo $SYNCING | jq -r '.syncing')
+    CATCHING_UP=$(echo $STATUS | jq -r '.result.sync_info.catching_up')
+    NUM_PEERS=$(echo $NET_INFO | jq -r '.result.n_peers')
+
+    if [[ $IS_SYNCING == false && $CATCHING_UP == false ]]; then
+      if (( $NUM_PEERS > 0 )); then
+        echo "heimdall is synced with $NUM_PEERS peers"
+        exit 0
+      fi
+
+      echo "heimdall is synced, but has no peers"
+      exit 1
+    fi
+
+    echo "heimdall is still syncing"
+    exit 1
+  heimdall-startup.sh: |
+    #!/bin/bash
+
+    DISABLE_STARTUP_PROBE=/root/disable_startup
+
+    if [[ -f "$DISABLE_STARTUP_PROBE" ]]; then
+      echo "startup probe disabled"
+      exit 0
+    fi
+
+    curl -sf http://localhost:26657/status && exit 0 || exit 1
+  indexer-config.json: |
+    {
+      "fiat_rates": "coingecko",
+      "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"matic-network\",\"platformIdentifier\": \"polygon-pos\",\"platformVsCurrency\": \"usd\",\"periodSeconds\": 900}",
+      "fiat_rates_vs_currencies": "AED,ARS,AUD,BDT,BHD,BMD,BRL,CAD,CHF,CLP,CNY,CZK,DKK,EUR,GBP,HKD,HUF,IDR,ILS,INR,JPY,KRW,KWD,LKR,MMK,MXN,MYR,NGN,NOK,NZD,PHP,PKR,PLN,RUB,SAR,SEK,SGD,THB,TRY,TWD,UAH,USD,VEF,VND,ZAR,BTC,ETH",
+      "mempoolTxTimeoutHours": 48,
+      "queryBackendOnMempoolResync": false,
+      "coin_name": "Polygon",
+      "coin_shortcut": "MATIC",
+      "coin_label": "Polygon",
+      "rpc_url": "ws://localhost:8546",
+      "rpc_user": "",
+      "rpc_pass": "",
+      "rpc_timeout": 25,
+      "parse": true,
+      "message_queue_binding": "",
+      "subversion": "",
+      "address_format": "",
+      "mempool_workers": 8,
+      "mempool_sub_workers": 2,
+      "block_addresses_to_keep": 300
+    }
+  evm.sh: |
+    #!/bin/bash
+
+    get_best_reference_block_number() {
+      local best_reference_block_number=0
+
+      for reference_url in "$@"; do
+        local eth_blockNumber=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' $reference_url)
+
+        if [[ $eth_blockNumber != "" ]]; then
+          local current_block_number_hex=$(echo $eth_blockNumber | jq -r '.result')
+          local current_block_number=$(($current_block_number_hex))
+
+          if (( $current_block_number > $best_reference_block_number )); then
+            best_reference_block_number=$current_block_number
+          fi
+        fi
+      done
+
+      echo $best_reference_block_number
+    }
+
+    reference_validation() {
+      local service=$1
+      local current_block_number=$2
+      local best_reference_block_number=$3
+      local block_height_tolerance=$4
+
+      if (( $best_reference_block_number > 0 )); then
+        local nominal_block_number=$(( $best_reference_block_number - $block_height_tolerance ))
+
+        if (( $current_block_number >= $nominal_block_number )); then
+          echo "$service is synced within block height tolerance of reference node"
+          exit 0
+        fi
+
+        echo "$service is synced, but not within block height tolerance of reference node"
+        exit 1
+      fi
+    }

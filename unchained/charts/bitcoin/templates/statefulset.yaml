@@ -1,0 +1,90 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.name }}
+  labels: 
+    app: {{ .Values.name }}
+    asset: {{ .Values.name }}
+    tier: 'statefulset'
+spec:
+  serviceName: {{ .Values.name }}-svc
+  replicas: {{ .Values.statefulset.replicas }}
+  selector:
+    matchLabels:   
+      app: {{ .Values.name }}
+      asset: {{ .Values.name }}
+      tier: 'statefulset'
+  podManagementPolicy: 'Parallel'
+  updateStrategy:
+    type: 'RollingUpdate'
+  template:
+    metadata:
+      namespace: {{ .Values.name }}
+      labels:
+        app: {{ .Values.name }}
+        asset: {{ .Values.name }}
+        tier: 'statefulset'
+    spec:
+      containers: 
+        {{- range .Values.statefulset.containers }}
+        name: {{ .name }}
+        image: {{ .image }}
+        {{- with .env }}
+        env: 
+          {{- toYaml . | nindent 2 }}
+        {{- end }}
+        {{-with .ports }}
+        ports: 
+          {{- toYaml . | nindent 2 }}
+        {{- end }}
+        {{- with .limits }}
+        limits:
+          {{- toYaml . | nindent 2 }}
+        {{- end }}
+        {{- with .requests }}
+        requests:
+          {{- toYaml . | nindent 2 }}
+        {{- end }}
+        command: {{ tpl .command . }} 
+        readinessProbe:
+          failureThreshold: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+          exec:
+            command: 
+            - /readiness.sh
+        volumeMounts:
+        - name: data-{{ .Values.name }}
+          mountPath: {{ default "/data" .dataDir }}
+        - name: {{ .Values.name }}
+          mountPath: '/readiness.sh'
+          subPath: {{ .name }}-readiness.sh
+        {{- if eq .name 'daemon' }}
+        - name: {{ .Values.name }}
+          mountPath: '/init.sh'
+          subPath: init.sh
+        {{- else }}
+        - name: {{ .Values.name }}
+          mountPath: '/indexer-config.json'
+          subPath: 'indexer-config.json'
+        {{ end }}
+        {{ end }}
+    terminationGracePeriodSeconds: 600
+    volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName:  
+      - name: {{ .Values.name }}
+        configMap:
+          name: {{ .Values.name }}
+          defaultMode: 0775
+  volumeClaimTemplates:
+  - metadata:
+      name: 
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 

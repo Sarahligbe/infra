@@ -1,0 +1,75 @@
+name: optimism
+
+api:
+  tier: api
+  image: "shapeshiftdao/unchained-optimism-api:latest"
+  coinstack: node
+  autoscaling: true
+  replicas: 2
+  max_replicas: 6
+  cpu_threshold: 75
+  limits:
+    cpu: 500m
+    memory: 500Mi
+  requests:
+    cpu: 250m
+    memory: 250Mi
+  env:
+  - name: INDEXER_URL
+    value:
+  - name: INDEXER_WS_URL
+    value:
+  - name: LOG_LEVEL
+    value:
+  - name: NETWORK
+    value:
+  - name: RPC_URL
+    value:
+
+statefulset:
+  name: optimism
+  replicas: 2
+  containers:
+    - name: daemon
+      image: "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-geth:v1.101200.0"
+      env:
+      - name: SNAPSHOT
+        value: 'https://storage.googleapis.com/oplabs-mainnet-data/mainnet-bedrock.tar'
+      ports:
+      - name: daemon-rpc
+        containerPort: 8545
+      - name: daemon-ws
+        containerPort: 8546
+      - name: daemon-auth
+        containerPort: 8551
+      limits:
+        cpu: 4
+        memory: 24Gi
+      requests:
+        cpu: 2
+      storage_size: 1000Gi
+    - name: op-node
+      image: "us-docker.pkg.dev/oplabs-tools-artifacts/images/op-node:v1.1.3"
+      ports:
+      - name: 'op-node-rpc'
+        containerPort: 9545
+      env:
+      - name: NETWORK 
+        value: mainnet
+      - name: L1_RPC_ENDPOINT
+        value: `http://ethereum-svc.ethereum.svc.cluster.local:8545`
+      limits:
+        cpu: 2
+        memory: 2Gi
+      requests:
+        cpu: 1
+      storage_size: 100Gi
+    - name: indexer
+      image: "shapeshiftdao/unchained-blockbook:optimism-7c8d054"
+      command: {{ .Values.global.indexerCommand }}
+      limits:
+        cpu: 2
+        memory: 8Gi
+      requests:
+        cpu: 1
+      storage_size: 500Gi

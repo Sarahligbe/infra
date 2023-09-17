@@ -1,0 +1,212 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ .Values.statefulset.name }}-scripts
+  namespace: {{ .Values.statefulset.name }}
+data: 
+  daemon-init.sh: |
+    #!/bin/bash
+
+    set -e
+
+    apt update && apt install -y curl jq
+
+    start() {
+      /avalanchego/build/avalanchego \
+        --data-dir /data \
+        --http-host 0.0.0.0 \
+        --http-allowed-hosts "*" \
+        --staking-ephemeral-cert-enabled=true \
+        --chain-config-dir=/configs/chains &
+      PID="$!"
+    }
+
+    stop() {
+      echo "Catching signal and sending to PID: $PID" && kill $PID
+      while $(kill -0 $PID 2>/dev/null); do sleep 1; done
+    }
+
+    trap 'stop' TERM INT
+    start
+    wait $PID
+  config.json: |
+    {
+      "eth-apis": [
+        "eth",
+        "eth-filter",
+        "net",
+        "debug-tracer",
+        "web3",
+        "internal-eth",
+        "internal-blockchain",
+        "internal-transaction",
+        "internal-tx-pool",
+        "internal-debug"
+      ],
+      "pruning-enabled": true,
+      "allow-unfinalized-queries": true
+    }
+  daemon-liveness.sh: |
+    #!/bin/bash
+
+    DISABLE_LIVENESS_PROBE=/data/disable_liveness
+
+    if [[ -f "$DISABLE_LIVENESS_PROBE" ]]; then
+      echo "liveness probe disabled"
+      exit 0
+    fi
+
+    FILE=/data/.block_number
+
+    ETH_BLOCK_NUMBER=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:9650/ext/bc/C/rpc) || exit 1
+
+    CURRENT_BLOCK_NUMBER_HEX=$(echo $ETH_BLOCK_NUMBER | jq -r '.result')
+    CURRENT_BLOCK_NUMBER=$(($CURRENT_BLOCK_NUMBER_HEX))
+
+    if [[ ! -f "$FILE" ]]; then
+      echo $CURRENT_BLOCK_NUMBER > $FILE
+      exit 1
+    fi
+
+    PREVIOUS_BLOCK_NUMBER=$(cat $FILE)
+    echo $CURRENT_BLOCK_NUMBER > $FILE
+
+    if (( $CURRENT_BLOCK_NUMBER > $PREVIOUS_BLOCK_NUMBER )); then
+      echo "daemon is running"
+      exit 0
+    fi
+
+    echo "daemon is stalled"
+    exit 1
+  daemon-readiness.sh: |
+    #!/bin/bash
+
+    DISABLE_READINESS_PROBE=/data/disable_readiness
+
+    if [[ -f "$DISABLE_READINESS_PROBE" ]]; then
+      echo "readiness probe disabled"
+      exit 0
+    fi
+
+    source /evm.sh
+
+    BLOCK_HEIGHT_TOLERANCE=5
+
+    ETH_SYNCING=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":1}' -H 'Content-Type:application/json;' http://localhost:9650/ext/bc/C/rpc) || exit 1
+    INFO_PEERS=$(curl -sf -d '{"jsonrpc":"2.0","method":"info.peers","params":[],"id":1}' -H 'Content-Type:application/json;' http://localhost:9650/ext/info) || exit 1
+
+    SYNCING=$(echo $ETH_SYNCING | jq -r '.result')
+    NUM_PEERS=$(echo $INFO_PEERS | jq -r '.result.numPeers')
+
+    if [[ $SYNCING == false ]]; then
+      if (( $NUM_PEERS > 0 )); then
+        eth_blockNumber=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:9650/ext/bc/C/rpc) || exit 1
+        current_block_number_hex=$(echo $eth_blockNumber | jq -r '.result')
+        current_block_number=$(($current_block_number_hex))
+
+        best_reference_block_number=$(get_best_reference_block_number https://api.avax.network/ext/bc/C/rpc https://avalanche-c-chain.publicnode.com https://avalanche.public-rpc.com)
+
+        # if node is reporting synced, double check against reference nodes
+        reference_validation daemon $current_block_number $best_reference_block_number $BLOCK_HEIGHT_TOLERANCE
+
+        echo "daemon is synced, with $NUM_PEERS peers"
+        exit 0
+      fi
+
+      echo "daemon is synced, but has no peers"
+      exit 1
+    fi
+
+    echo "daemon is still syncing"
+    exit 1
+  daemon-startup.sh: |
+    #!/bin/bash
+
+    DISABLE_STARTUP_PROBE=/data/disable_startup
+
+    if [[ -f "$DISABLE_STARTUP_PROBE" ]]; then
+      echo "startup probe disabled"
+      exit 0
+    fi
+
+    NET_LISTENING=$(curl -sf -d '{"jsonrpc":"2.0","method":"net_listening","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:9650/ext/bc/C/rpc) || exit 1
+    INFO_PEERS=$(curl -sf -d '{"jsonrpc":"2.0","method":"info.peers","params":[],"id":1}' -H 'Content-Type: application/json' http://localhost:9650/ext/info) || exit 1
+
+    LISTENING=$(echo $NET_LISTENING | jq -r '.result')
+    NUM_PEERS=$(echo $INFO_PEERS | jq -r '.result.numPeers')
+
+    if [[ $LISTENING == true ]]; then
+      if (( $NUM_PEERS > 0 )); then
+        echo "daemon is listening, with $NUM_PEERS peers"
+        exit 0
+      fi
+
+      echo "daemon is listening, but has no peers"
+      exit 1
+    fi
+
+    echo "daemon is not listening"
+    exit 1
+  indexer-config.json: |
+    {
+      "fiat_rates": "coingecko",
+      "fiat_rates_vs_currencies": "AED,ARS,AUD,BDT,BHD,BMD,BRL,CAD,CHF,CLP,CNY,CZK,DKK,EUR,GBP,HKD,HUF,IDR,ILS,INR,JPY,KRW,KWD,LKR,MMK,MXN,MYR,NGN,NOK,NZD,PHP,PKR,PLN,RUB,SAR,SEK,SGD,THB,TRY,TWD,UAH,USD,VEF,VND,ZAR,BTC,ETH",
+      "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"avalanche-2\",\"platformIdentifier\": \"avalanche\",\"platformVsCurrency\": \"usd\",\"periodSeconds\": 900}",
+      "mempoolTxTimeoutHours": 24,
+      "queryBackendOnMempoolResync": false,
+      "coin_name": "Avalanche",
+      "coin_shortcut": "AVAX",
+      "coin_label": "Avalanche",
+      "rpc_url": "ws://localhost:9650/ext/bc/C/ws",
+      "rpc_user": "",
+      "rpc_pass": "",
+      "rpc_timeout": 25,
+      "parse": true,
+      "message_queue_binding": "",
+      "subversion": "",
+      "address_format": "",
+      "mempool_workers": 8,
+      "mempool_sub_workers": 2,
+      "block_addresses_to_keep": 300
+    }
+  evm.sh: |
+    #!/bin/bash
+
+    get_best_reference_block_number() {
+      local best_reference_block_number=0
+
+      for reference_url in "$@"; do
+        local eth_blockNumber=$(curl -sf -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' -H 'Content-Type: application/json' $reference_url)
+
+        if [[ $eth_blockNumber != "" ]]; then
+          local current_block_number_hex=$(echo $eth_blockNumber | jq -r '.result')
+          local current_block_number=$(($current_block_number_hex))
+
+          if (( $current_block_number > $best_reference_block_number )); then
+            best_reference_block_number=$current_block_number
+          fi
+        fi
+      done
+
+      echo $best_reference_block_number
+    }
+
+    reference_validation() {
+      local service=$1
+      local current_block_number=$2
+      local best_reference_block_number=$3
+      local block_height_tolerance=$4
+
+      if (( $best_reference_block_number > 0 )); then
+        local nominal_block_number=$(( $best_reference_block_number - $block_height_tolerance ))
+
+        if (( $current_block_number >= $nominal_block_number )); then
+          echo "$service is synced within block height tolerance of reference node"
+          exit 0
+        fi
+
+        echo "$service is synced, but not within block height tolerance of reference node"
+        exit 1
+      fi
+    }

@@ -1,0 +1,113 @@
+{{- range $key, $value := .Values.statefulset }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $key }}
+  namespace: {{ $key }}
+  labels: 
+    app: {{ $key }}
+    asset: {{ $key }}
+    tier: 'statefulset'
+spec:
+  serviceName: {{ $key }}-svc
+  replicas: {{ $value.replicas }}
+  selector:
+    matchLabels:   
+      app: {{ $key }}
+      asset: {{ $key }}
+      tier: 'statefulset'
+  podManagementPolicy: 'Parallel'
+  updateStrategy:
+    type: 'RollingUpdate'
+  template:
+    metadata:
+      namespace: {{ $key }}
+      labels:
+        app: {{ $key }}
+        asset: {{ $key }}
+        tier: 'statefulset'
+    spec:
+      containers: 
+        command: '/init.sh' 
+        startupProbe:
+          failureThreshold: 60
+          periodSeconds: 30
+          timeoutSeconds: 10 
+          exec:
+            command: 
+            - /startup.sh
+            (if postgres)
+            - 'pg_isready', '-U', '$POSTGRES_USER'
+          (if statement)
+          tcpSocket:
+            port: 8080
+        livenessProbe:
+          failureThreshold: 5
+          periodSeconds: 30
+          timeoutSeconds: 10
+          exec:
+            command: 
+            - /liveness.sh
+            (if postgres)
+            - 'pg_isready', '-U', '$POSTGRES_USER'
+          (if statement)
+          tcpSocket:
+            port: 8080
+        readinessProbe:
+          failureThreshold: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+          exec:
+            command: 
+            - /readiness.sh
+            (if postgres)
+            - 'pg_isready', '-U', '$POSTGRES_USER'
+        volumeMounts:
+        - name: data-{{ $key }}
+          mountPath: {{ default "/data" $value.dataDir }}
+        - name: {{ $value.name }}
+          mountPath: '/init.sh'
+          subPath: init.sh
+        - name: {{ $value.name }}
+          mountPath: '/startup.sh'
+          subPath: startup.sh
+        - name: {{ $value.name }}
+          mountPath: '/liveness.sh'
+          subPath: liveness.sh
+        - name: {{ $value.name }}
+          mountPath: '/readiness.sh'
+          subPath: readiness.sh
+        (if gnosis daemon and daemon-beacon, optimism daemon and op-node, eth daemon and daemon-beacon, )
+        - name: {{ $value.name }}
+          mountPath: '/jwt.hex'
+          subPath: 'jwt.hex'
+        (if polygon daemon, bnbsmartchain daemon, optimism daemon and op-node, ethereum daemon, avalanche daemon)
+        - name: {{ $value.name }}
+          mountPath: '/evm.sh'
+          subPath: 'evm.sh'
+        (if avalanche daemon)
+        - name: {{ $value.name }}
+          mountPath: '/configs/chains/C/config.json'
+          subPath: 'c-chain-config.json'
+        (if cosmos daemon, thorchain daemon)
+        - name: {{ $value.name }}
+          mountPath: '/tendermint.sh'
+          subPath: 'tendermint.sh'
+    terminationGracePeriodSeconds: 600
+    volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName:  
+      - name: scripts
+        configMap:
+          name: 
+          defaultMode: 0777
+  volumeClaimTemplates:
+  - metadata:
+      name: 
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 

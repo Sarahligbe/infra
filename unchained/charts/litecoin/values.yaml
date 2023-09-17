@@ -1,0 +1,53 @@
+name: litecoin
+
+api:
+  tier: api
+  image: "shapeshiftdao/unchained-litecoin-api:latest"
+  coinstack: node
+  autoscaling: true
+  replicas: 2
+  max_replicas: 6
+  cpu_threshold: 75
+  limits:
+    cpu: 500m
+    memory: 500Mi
+  requests:
+    cpu: 250m
+    memory: 250Mi
+  env:
+  - name: INDEXER_URL
+    value:
+  - name: INDEXER_WS_URL
+    value:
+  - name: LOG_LEVEL
+    value:
+  - name: NETWORK
+    value:
+  - name: RPC_URL
+    value:
+
+statefulset:
+  name: litecoin
+  replicas: 3
+  containers:
+    - name: daemon
+      image: "shapeshiftdao/litecoin-core:v0.21.2.2"
+      command: '/init.sh' 
+      ports:
+      - name: daemon-rpc
+        containerPort: 8332
+      limits:
+        cpu: 2
+        memory: 4Gi
+      requests:
+        cpu: 1
+      storage_size: 250Gi
+    - name: indexer
+      image: "shapeshiftdao/unchained-blockbook:95ee9b5"
+      command: "{{ .Values.global.indexerCommand }} '-workers=1'"
+      limits:
+        cpu: 2
+        memory: 12Gi
+      requests:
+        cpu: 1
+      storage_size: 250Gi

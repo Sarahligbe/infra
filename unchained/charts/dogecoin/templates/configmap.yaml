@@ -1,0 +1,101 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.statefulset.name }}-scripts
+  namespace: {{ .Values.statefulset.name }}
+data:
+  init.sh: |
+    #!/bin/bash
+
+    set -e
+
+    start_coin() {
+      dogecoind \
+        -port=22556 \
+        -rpcuser=user \
+        -rpcpassword=password \
+        -rpcallowip=0.0.0.0/0 \
+        -rpcbind=0.0.0.0 \
+        -datadir=/data \
+        -printtoconsole=1 \
+        -server=1 \
+        -nolisten=1 \
+        -txindex=1 \
+        -disablewallet=1 \
+        -zmqpubhashtx=tcp://127.0.0.1:28332 \
+        -zmqpubhashblock=tcp://127.0.0.1:28332 \
+        -rpcworkqueue=1100 \
+        -rpcport=8332 \
+        -maxmempool=2000 \
+        -dbcache=4000 &
+      PID="$!"
+    }
+
+    stop_coin() {
+      echo "Catching signal and sending to PID: $PID"
+      kill $PID
+      while $(kill -0 $PID 2>/dev/null); do
+        sleep 1
+      done
+    }
+
+    trap 'stop_coin' TERM INT
+
+    start_coin
+    wait $PID
+  readiness.sh: |
+    #!/bin/bash
+
+    DISABLE_READINESS_PROBE=/data/disable_readiness
+
+    if [[ -f "$DISABLE_READINESS_PROBE" ]]; then
+      echo "readiness probe disabled"
+      exit 0
+    fi
+
+    TOLERANCE=1
+
+    CONNECTION_COUNT=$(curl -sf -H 'content-type: application/json' -u user:password -d '{ "jsonrpc": "2.0", "id": "probe", "method": "getconnectioncount", "params": [] }' http://localhost:8332) || exit 1
+    BLOCKCHAIN_INFO=$(curl -sf -H 'content-type: application/json' -u user:password -d '{ "jsonrpc": "2.0", "id": "probe", "method": "getblockchaininfo", "params": [] }' http://localhost:8332) || exit 1
+
+    PEERS=$(echo $CONNECTION_COUNT | jq -r '.result')
+    NODE_LATEST_BLOCK_HEIGHT=$(echo $BLOCKCHAIN_INFO | jq -r '.result.blocks')
+    NETWORK_LATEST_BLOCK_HEIGHT=$(echo $BLOCKCHAIN_INFO | jq -r '.result.headers')
+
+    NOMINAL_BLOCKS=$(( $NETWORK_LATEST_BLOCK_HEIGHT - $TOLERANCE ))
+
+    if (( $NODE_LATEST_BLOCK_HEIGHT >= $NOMINAL_BLOCKS )); then
+      if (( $PEERS > 0 )); then
+        echo "node is synced with $PEERS peers"
+        exit 0
+      fi
+
+      echo "node is synced, but has no peers"
+      exit 1
+    fi
+
+    echo "node is still syncing"
+    exit 1
+  indexer-config.json: |
+    {
+      "fiat_rates": "coingecko",
+      "fiat_rates_vs_currencies": "AED,ARS,AUD,BDT,BHD,BMD,BRL,CAD,CHF,CLP,CNY,CZK,DKK,EUR,GBP,HKD,HUF,IDR,ILS,INR,JPY,KRW,KWD,LKR,MMK,MXN,MYR,NGN,NOK,NZD,PHP,PKR,PLN,RUB,SAR,SEK,SGD,THB,TRY,TWD,UAH,USD,VEF,VND,ZAR,BTC,ETH",
+      "fiat_rates_params": "{\"url\": \"https://api.coingecko.com/api/v3\", \"coin\": \"dogecoin\", \"periodSeconds\": 900}",
+      "coin_name": "Dogecoin",
+      "coin_shortcut": "DOGE",
+      "coin_label": "Dogecoin",
+      "rpc_url": "http://localhost:8332",
+      "rpc_user": "user",
+      "rpc_pass": "password",
+      "rpc_timeout": 25,
+      "parse": true,
+      "message_queue_binding": "tcp://localhost:28332",
+      "subversion": "",
+      "address_format": "",
+      "xpub_magic": 49990397,
+      "slip44": 3,
+      "mempool_workers": 8,
+      "mempool_sub_workers": 2,
+      "block_addresses_to_keep": 300
+    }
