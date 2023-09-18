@@ -3,11 +3,7 @@ name: litecoin
 api:
   tier: api
   image: "shapeshiftdao/unchained-litecoin-api:latest"
-  coinstack: node
   autoscaling: true
-  replicas: 2
-  max_replicas: 6
-  cpu_threshold: 75
   limits:
     cpu: 500m
     memory: 500Mi
@@ -51,3 +47,6 @@ statefulset:
       requests:
         cpu: 1
       storage_size: 250Gi
+      ports:
+      - name: indexer
+        containerPort: 8001

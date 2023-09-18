@@ -3,11 +3,7 @@ name: thorchain
 api:
   tier: api
   image: "shapeshiftdao/unchained-thorchain-api:latest"
-  coinstack: go
   autoscaling: true
-  replicas: 2
-  max_replicas: 6
-  cpu_threshold: 75
   limits:
     cpu: 500m
     memory: 500Mi

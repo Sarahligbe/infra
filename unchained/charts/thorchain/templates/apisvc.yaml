@@ -1,14 +1,1 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: 
-  namespace:
-  labels:
-spec:
-  type: ClusterIP
-  ports:
-    - port: 
-      targetPort: rpc
-      protocol: TCP
-      name: http
-  selector:
+{{ include "unchained.apiservice" . }}

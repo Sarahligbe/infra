@@ -4,11 +4,13 @@ api:
   name: avalanche
   tier: api
   image: "shapeshiftdao/unchained-avalanche-api:latest"
-  coinstack: node
   autoscaling: true
-  replicas: 2
-  max_replicas: 6
-  cpu_threshold: 75
+  limits:
+    cpu: 500m
+    memory: 500Mi
+  requests:
+    cpu: 250m
+    memory: 250Mi
   env:
   - name: INDEXER_URL
     value:
@@ -45,3 +47,6 @@ statefulset:
       requests:
         cpu: 1
       storage_size: 500Gi
+      ports:
+      - name: indexer
+        containerPort: 8001

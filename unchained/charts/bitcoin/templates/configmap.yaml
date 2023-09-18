@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata: 
-  name: {{ .Values.statefulset.name }}-scripts
-  namespace: {{ .Values.statefulset.name }}
+  name: {{ .Chart.Name }}-scripts
+  namespace: {{ .Chart.Name }}
 data: 
   init.sh: |
     #!/bin/bash
@@ -100,3 +100,5 @@ data:
       "mempool_sub_workers": 2,
       "block_addresses_to_keep": 300
     }
+  indexer-readiness.sh: |
+    {{- include "unchained.indexerReadiness" . | nindent 4}}

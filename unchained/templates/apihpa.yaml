@@ -1,13 +1,21 @@
-(if autoscaling is enabled)
+{{- if eq .Values.api.autoscaling 'true' }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
-  namespace:
+  name: {{ .Chart.Name }}-hpa
+  namespace: {{ .Chart.Name }}
 spec:
-  minReplicas:
-  maxReplicas:
+  minReplicas: 2
+  maxReplicas: 6
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: 
-  targetCPUUtilizationPercentage:
+    name: {{ .Chart.Name }}-{{ .Values.api.tier }}
+    metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+{{- end }}

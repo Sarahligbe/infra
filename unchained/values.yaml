@@ -8,3 +8,39 @@ global:
           '-enablesubnewtx',
           '-logtostderr',
         ]
+
+avalanche: 
+  enabled: true
+
+bitcoin:
+  enabled: true
+
+bitcoincash:
+  enabled: true
+
+bnbsmartchain:
+  enabled: true
+
+cosmos:
+  enabled: true
+
+dogecoin:
+  enabled: true
+
+ethereum:
+  enabled: true
+
+gnosis:
+  enabled: true
+
+litecoin:
+  enabled: true
+
+optimism:
+  enabled: true
+
+polygon:
+  enabled: true
+
+thorchain:
+  enabled: true

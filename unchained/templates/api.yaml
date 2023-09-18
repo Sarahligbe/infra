@@ -6,10 +6,7 @@ metadata:
   namespace: {{ $key }}
   name: {{ $key }}
   labels:
-    app: {{ $key }}
-    coinstack: {{ $value.coinstack }}
-    asset: {{ $key }}
-    tier: {{ $value.tier }}
+    {{- include "unchained.apiLabels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:

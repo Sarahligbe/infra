@@ -1,13 +1,1 @@
-(if autoscaling is enabled)
-apiVersion: autoscaling/v1
-kind: HorizontalPodAutoscaler
-metadata:
-  namespace:
-spec:
-  minReplicas:
-  maxReplicas:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: 
-  targetCPUUtilizationPercentage:
+{{- include "unchained.apihpa" . }}

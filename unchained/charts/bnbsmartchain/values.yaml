@@ -3,11 +3,7 @@ name: bnbsmartchain
 api:
   tier: api
   image: "shapeshiftdao/unchained-bnbsmartchain-api:latest"
-  coinstack: node
   autoscaling: true
-  replicas: 2
-  max_replicas: 6
-  cpu_threshold: 75
   limits:
     cpu: 1
     memory: 500Mi
@@ -54,3 +50,6 @@ statefulset:
       requests:
         cpu: 2
       storage_size: 1000Gi
+      ports:
+      - name: indexer
+        containerPort: 8001

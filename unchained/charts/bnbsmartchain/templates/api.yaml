@@ -2,34 +2,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: {{ .Values.api.name }}
-  name: {{ .Values.api.name }}
+  namespace: {{ .Chart.Name }}
+  name: {{ .Chart.Name }}-{{ .Values.api.tier }}
   labels:
-    app: {{ .Values.api.name }}
-    coinstack: {{ .Values.api.coinstack }}
-    asset: {{ .Values.api.name }}
-    tier: {{ .Values.api.tier }}
+    {{- include "unchained.apiLabels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      app: {{ .Values.api.name }}
-      coinstack: {{ .Values.api.coinstack }}
-      asset: {{ .Values.api.name }}
-      tier: {{ .Values.api.tier }}
+      {{- include "unchained.apiLabels" . | nindent 4 }}
   replicas: {{ .Values.api.replicas }}
   template:
     metadata:
-      namespace: {{ .Values.api.name }}
+      namespace: {{ .Chart.Name }}
       labels: 
-        app: {{ .Values.api.name }}
-        coinstack: {{ .Values.api.coinstack }}
-        asset: {{ .Values.api.name }}
-        tier: {{ .Values.api.tier }}
+        {{- include "unchained.apiLabels" . | nindent 4 }}
     spec:
       containers:
-      - name: {{ .Values.api.name }}-{{ .Values.api.tier }}
+      - name: {{ .Chart.Name }}-{{ .Values.api.tier }}
         image: {{ .Values.api.image }}
-        command: ['node', `dist/{{ .Values.api.name }}/api/src/app.js`] 
+        command: ['node', `dist/{{ .Chart.Name }}/api/src/app.js`] 
         env:
         {{- range $value := .Values.api.env }}
         - name: {{ $value.name }}

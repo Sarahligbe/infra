@@ -2,6 +2,44 @@ apiVersion: v2
 name: unchained-stack
 description: Deploys an Unchained stack with options to enable or disable some services
 type: application
-version: 0.1.0
+version: 1.0.0
 
-appVersion: 0.1.0
+appVersion: 1.0.0
+
+dependencies:
+- name: avalanche
+  version: "1.0.0"
+  condition: avalanche.enabled
+- name: bitcoin
+  version: "1.0.0"
+  condition: bitcoin.enabled
+- name: bitcoincash
+  version: "1.0.0"
+  condition: bitcoincash.enabled
+- name: bnbsmartchain
+  version: "1.0.0"
+  condition: bnbsmartchain.enabled
+- name: cosmos
+  version: "1.0.0"
+  condition: cosmos.enabled
+- name: dogecoin
+  version: "1.0.0"
+  condition: dogecoin.enabled
+- name: gnosis
+  version: "1.0.0"
+  condition: gnosis.enabled
+- name: litecoin
+  version: "1.0.0"
+  condition: litecoin.enabled
+- name: ethereum
+  version: "1.0.0"
+  condition: ethereum.enabled
+- name: optimism
+  version: "1.0.0"
+  condition: optimism.enabled
+- name: polygon
+  version: "1.0.0"
+  condition: polygon.enabled
+- name: thorchain
+  version: "1.0.0"
+  condition: thorchain.enabled
