@@ -12,13 +12,13 @@ api:
     memory: 250Mi
   env:
   - name: LCD_URL
-    value:
+    value: "https://dev-daemon.cosmos.shapeshift.com/lcd"
   - name: GRPC_URL
-    value:
+    value: "dev-daemon.cosmos.shapeshift.com"
   - name: WS_URL
-    value:
+    value: "wss://dev-daemon.cosmos.shapeshift.com/rpc"
   - name: RPC_URL
-    value:
+    value: "https://dev-daemon.cosmos.shapeshift.com/rpc"
 
 statefulset:
   name: cosmos
