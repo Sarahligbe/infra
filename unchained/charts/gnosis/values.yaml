@@ -64,7 +64,13 @@ statefulset:
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:gnosis-7fc9809"
       command: 
-        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }} 
+        - '/bin/blockbook'
+        - '-blockchaincfg=/config.json'
+        - '-datadir=/data'
+        - '-sync'
+        - '-public=:8001'
+        - '-enablesubnewtx'
+        - '-logtostderr'
       limits:
         cpu: 2
         memory: 24Gi
