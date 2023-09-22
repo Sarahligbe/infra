@@ -28,7 +28,8 @@ statefulset:
   containers:
     - name: daemon
       image: "nethermind/nethermind:1.20.1"
-      command: '/init.sh'
+      command: 
+        - '/init.sh'
       ports:
       - name: daemon-rpc
         containerPort: 8545
@@ -44,17 +45,16 @@ statefulset:
       storage_size: 1000Gi
     - name: daemon-beacon
       image: "sigp/lighthouse:v4.3.0"
-      command: [
-          '/usr/local/bin/lighthouse',
-          'beacon_node',
-          '--network=gnosis',
-          '--disable-upnp',
-          '--datadir=/data',
-          '--http',
-          '--execution-endpoint=http://localhost:8551',
-          '--execution-jwt=/jwt.hex',
-          '--checkpoint-sync-url=https://checkpoint.gnosischain.com/',
-        ]
+      command: 
+        - '/usr/local/bin/lighthouse'
+        - 'beacon_node'
+        - '--network=gnosis'
+        - '--disable-upnp'
+        - '--datadir=/data'
+        - '--http'
+        - '--execution-endpoint=http://localhost:8551'
+        - '--execution-jwt=/jwt.hex'
+        - '--checkpoint-sync-url=https://checkpoint.gnosischain.com/'
       limits:
         cpu: 2
         memory: 4Gi
@@ -63,7 +63,8 @@ statefulset:
       storage_size: 500Gi
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:gnosis-7fc9809"
-      command: {{ .Values.global.indexerCommand }}
+      command: 
+        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }} 
       limits:
         cpu: 2
         memory: 24Gi

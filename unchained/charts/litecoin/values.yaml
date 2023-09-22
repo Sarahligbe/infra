@@ -28,7 +28,8 @@ statefulset:
   containers:
     - name: daemon
       image: "shapeshiftdao/litecoin-core:v0.21.2.2"
-      command: '/init.sh' 
+      command: 
+        - '/init.sh' 
       ports:
       - name: daemon-rpc
         containerPort: 8332
@@ -40,7 +41,9 @@ statefulset:
       storage_size: 250Gi
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:95ee9b5"
-      command: "{{ .Values.global.indexerCommand }} '-workers=1'"
+      command: 
+        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }} 
+        - '-workers=1'
       limits:
         cpu: 2
         memory: 12Gi

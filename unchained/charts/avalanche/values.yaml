@@ -40,7 +40,8 @@ statefulset:
         containerPort: 9650
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:95ee9b5"
-      command: {{ .Values.global.indexerCommand }}
+      command: 
+        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }} 
       limits:
         cpu: 2
         memory: 6Gi

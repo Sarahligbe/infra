@@ -42,7 +42,7 @@ spec:
           {{- toYaml . | nindent 10 }}
         {{- end }}
         {{- if or (eq .name 'daemon') (eq .name 'indexer') }}
-        command: {{ tpl .command . }}
+        command: {{- tpl (toYaml .command) . | nindent 10 }} 
         {{- else }}
         args: {{ .args }}
         {{ end }}

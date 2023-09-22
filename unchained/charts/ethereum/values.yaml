@@ -28,7 +28,8 @@ statefulset:
   containers:
     - name: daemon
       image: "ethereum/client-go:v1.12.2"
-      command: '/init.sh' 
+      command: 
+        - '/init.sh' 
       limits:
         cpu: 2
         memory: 32Gi
@@ -47,15 +48,14 @@ statefulset:
         value: mainnet
     - name: daemon-beacon
       image: "gcr.io/prysmaticlabs/prysm/beacon-chain:v4.0.8"
-      args: [
-          '--datadir',
-          '/data',
-          '--execution-endpoint',
-          'http://localhost:8551',
-          '--jwt-secret',
-          '/jwt.hex',
-          '--accept-terms-of-use',
-        ]
+      args:
+        - '--datadir'
+        - '/data'
+        - '--execution-endpoint'
+        - 'http://localhost:8551'
+        - '--jwt-secret'
+        - '/jwt.hex'
+        - '--accept-terms-of-use'
       limits:
         cpu: 2
         memory: 12Gi
@@ -64,7 +64,8 @@ statefulset:
       storage_size: 500Gi
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:95ee9b5"
-      command: {{ .Values.global.indexerCommand }}
+      command: 
+        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }} 
       limits:
         cpu: 2
         memory: 16Gi

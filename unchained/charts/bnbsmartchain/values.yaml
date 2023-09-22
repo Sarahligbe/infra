@@ -28,7 +28,8 @@ statefulset:
   containers:
     - name: daemon
       image: "shapeshiftdao/bnb-smart-chain:v1.2.11"
-      command: '/init.sh' 
+      command: 
+        - '/init.sh' 
       limits:
         cpu: 8
         memory: 72Gi
@@ -43,7 +44,8 @@ statefulset:
       storage_size: 4500Gi
     - name: indexer
       image: "shapeshiftdao/unchained-blockbook:95ee9b5"
-      command: {{ .Values.global.indexerCommand }}
+      command: 
+        - {{ .Values.global.indexerCommand | toYaml | nindent 10 }}
       limits:
         cpu: 4
         memory: 24Gi

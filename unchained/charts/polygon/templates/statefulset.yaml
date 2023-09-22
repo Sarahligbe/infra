@@ -41,7 +41,7 @@ spec:
         requests:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        command: {{ tpl .command . }} 
+        command: {{- tpl (toYaml .command) . | nindent 10 }}  
         startupProbe:
           failureThreshold: 60
           periodSeconds: 30

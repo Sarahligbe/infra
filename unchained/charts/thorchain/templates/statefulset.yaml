@@ -25,7 +25,8 @@ spec:
       {{- range .Values.statefulset.containers }}
         name: {{ .name }}
         image: {{ .image }}
-        command: '/init.sh'
+        command: 
+          - '/init.sh'
         {{- with .env }}
         env: 
           {{- toYaml . | nindent 10 }}

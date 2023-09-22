@@ -41,7 +41,8 @@ spec:
         requests:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        command: '/init.sh' 
+        command: 
+          - '/init.sh' 
         startupProbe:
           failureThreshold: 60
           periodSeconds: 30
