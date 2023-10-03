@@ -20,7 +20,7 @@ spec:
       containers:
       - name: {{ .Chart.Name }}-{{ .Values.api.tier }}
         image: {{ .Values.api.image }}
-        command: ['node', `dist/{{ .Chart.Name }}/api/src/app.js`] 
+        command: ['node', 'dist/{{ .Values.name }}/api/src/app.js'] 
         env:
         {{- range $value := .Values.api.env }}
         - name: {{ $value.name }}
@@ -31,11 +31,11 @@ spec:
           name: http
         resources:
           limits:
-            cpu: {{ $value.limits.cpu }}
-            memory: {{ $value.limits.memory }}
+            cpu: {{ .Values.api.limits.cpu }}
+            memory: {{ .Values.api.limits.memory }}
           requests:
-            cpu: {{ $value.requests.cpu }}
-            memory: {{ $value.requests.memory }}
+            cpu: {{ .Values.api.requests.cpu }}
+            memory: {{ .Values.api.requests.memory }}
         readinessProbe:
           httpGet:
           - path: '/health'

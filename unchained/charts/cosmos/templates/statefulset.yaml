@@ -23,13 +23,13 @@ spec:
     spec:
       containers: 
         {{- range .Values.statefulset.containers }}
-        name: {{ .name }}
+      - name: {{ .name }}
         image: {{ .image }}
         {{- with .env }}
         env: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{-with .ports }}
+        {{- with .ports }}
         ports: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
@@ -49,54 +49,53 @@ spec:
           timeoutSeconds: 10 
           exec:
             command: 
-            - /startup.sh
+            - '/startup.sh'
         livenessProbe:
           failureThreshold: 5
           periodSeconds: 30
           timeoutSeconds: 10
           exec:
             command: 
-            - /liveness.sh
+            - '/liveness.sh'
         readinessProbe:
           failureThreshold: 10
           periodSeconds: 30
           timeoutSeconds: 10
           exec:
             command: 
-            - /readiness.sh
+            - '/readiness.sh'
         volumeMounts:
-        - name: data-{{ .Values.name }}
+        - name: {{ $.Chart.Name }}-{{ .name }}-data
           mountPath: {{ default "/data" .dataDir }}
-        - name: {{ .Values.name }}
+        - name: {{ $.Values.name }}
           mountPath: '/init.sh'
           subPath: init.sh
-        - name: {{ .Values.name }}
+        - name: {{ $.Values.name }}
           mountPath: '/startup.sh'
           subPath: startup.sh
-        - name: {{ .Values.name }}
+        - name: {{ $.Values.name }}
           mountPath: '/liveness.sh'
           subPath: liveness.sh
-        - name: {{ .Values.name }}
+        - name: {{ $.Values.name }}
           mountPath: '/readiness.sh'
           subPath: readiness.sh
-        - name: {{ .Values.name }}
+        - name: {{ $.Values.name }}
           mountPath: '/tendermint.sh'
           subPath: 'tendermint.sh'
-        {{- end }}
+      {{- end }}
     terminationGracePeriodSeconds: 600
-    volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName:  
+    volumes: 
       - name: {{ .Values.name }}
         configMap:
           name: {{ .Chart.Name }}-scripts
           defaultMode: 0775
-  volumeClaimTemplates: 
+  volumeClaimTemplates:
+  {{- range .Values.statefulset.containers }}
   - metadata:
-      name: 
+      name: {{ $.Chart.Name }}-{{ .name }}-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 
+          storage: {{ .storage_size }}
+  {{- end }}

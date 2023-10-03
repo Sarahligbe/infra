@@ -76,7 +76,7 @@ spec:
 Default Template for API HorizontalPodAutoscaler. All Sub-Charts under this Chart can include the below template.
 */}}
 {{- define "unchained.apihpa" }}
-{{- if eq .Values.api.autoscaling 'true' }}
+{{- if eq .Values.api.autoscaling true }}
 apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
@@ -114,10 +114,12 @@ spec:
   type: ClusterIP
   ports:
     {{- range .Values.statefulset.containers }}
-    - port: {{ .port.containerPort }}
-      targetPort: {{ .port.name }}
+    {{- range $portIndex, $port := .ports }}
+    - port: {{ $port.containerPort }}
+      targetPort: {{ $port.name }}
       protocol: TCP
-      name: {{ .port.name }}
+      name: {{ $port.name }}
+    {{- end }}
     {{- end }}
   selector:
     {{- include "unchained.statefulsetLabels" . | nindent 4 }}
@@ -143,3 +145,4 @@ Default Template for indexer-readiness script. All Sub-Charts under this Chart c
 {{- define "unchained.indexerReadiness" }}
 {{ $.Files.Get "files/indexer-readiness.sh" }}
 {{- end }}
+

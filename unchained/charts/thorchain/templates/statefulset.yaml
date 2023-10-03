@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       {{- range .Values.statefulset.containers }}
-        name: {{ .name }}
+      - name: {{ .name }}
         image: {{ .image }}
         command: 
           - '/init.sh'
@@ -31,7 +31,7 @@ spec:
         env: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{-with .ports }}
+        {{- with .ports }}
         ports: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
@@ -47,42 +47,61 @@ spec:
           failureThreshold: 60
           periodSeconds: 30
           timeoutSeconds: 10 
+          {{- if or (eq .name "daemon") (eq .name "timescaledb") }}
           exec:
+            {{- if eq .name "daemon" }}
             command: 
-            - /startup.sh
-            {{- if eq .name 'timescaledb' }}
-            - 'pg_isready', '-U', '$POSTGRES_USER'
-          {{- if eq .name 'indexer' }}
+            - '/startup.sh'
+            {{- else if eq .name "timescaledb" }}
+            command:
+            - 'pg_isready'
+            - '-U'
+            - '$POSTGRES_USER'
+            {{- end }}
+          {{- else }}
           tcpSocket:
             port: 8080
+          {{- end }}
         livenessProbe:
           failureThreshold: 5
           periodSeconds: 30
           timeoutSeconds: 10
+          {{- if or (eq .name "daemon") (eq .name "timescaledb") }}
           exec:
+            {{- if eq .name "daemon" }}
             command: 
-            - /liveness.sh
-            {{- if eq .name 'timescaledb' }}
-            - 'pg_isready', '-U', '$POSTGRES_USER'
-          {{- if eq .name 'indexer' }}
+            - '/liveness.sh'
+            {{- else if eq .name "timescaledb" }}
+            command:
+            - 'pg_isready'
+            - '-U'
+            - '$POSTGRES_USER'
+            {{- end }}
+          {{- else }}
           tcpSocket:
             port: 8080
+          {{- end }}
         readinessProbe:
           failureThreshold: 10
           periodSeconds: 30
           timeoutSeconds: 10
           exec:
+            {{- if or (eq .name "daemon") (eq .name "indexer") }}
             command: 
-            - /readiness.sh
-            {{- if eq .name 'timescaledb' }}
-            - 'pg_isready', '-U', '$POSTGRES_USER'
+            - '/readiness.sh'
+            {{- else }}
+            command:
+            - 'pg_isready'
+            - '-U'
+            - '$POSTGRES_USER'
+            {{- end }}
         volumeMounts:
-        - name: data-{{ $.Values.name }}
+        - name: {{ $.Chart.Name }}-{{ .name }}-data
           mountPath: {{ default "/data" .dataDir }}
         - name: {{ $.Values.name }}
           mountPath: '/init.sh'
           subPath: init.sh
-        {{- if eq .name 'daemon' }}
+        {{- if eq .name "daemon" }}
         - name: {{ $.Values.name }}
           mountPath: '/startup.sh'
           subPath: {{ .name }}-startup.sh
@@ -92,7 +111,7 @@ spec:
         - name: {{ $.Values.name }}
           mountPath: '/tendermint.sh'
           subPath: 'tendermint.sh'
-        {{- else if or (eq .name 'daemon') (eq .name 'indexer') }}
+        {{- else if or (eq .name "daemon") (eq .name "indexer") }}
         - name: {{ $.Values.name }}
           mountPath: '/readiness.sh'
           subPath: {{ .name }}-readiness.sh
@@ -100,12 +119,9 @@ spec:
         - name: dshm
           mountPath: '/dev/shm'
         {{- end }}
-        {{ end }}
+      {{- end }}
     terminationGracePeriodSeconds: 600
     volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName:  
       - name: {{ .Values.name }}
         configMap:
           name: {{ .Chart.Name }}-scripts
@@ -115,10 +131,12 @@ spec:
           medium: 'Memory'
           sizeLimit: 1Gi
   volumeClaimTemplates:
+  {{- range .Values.statefulset.containers }}
   - metadata:
-      name: 
+      name: {{ $.Chart.Name }}-{{ .name }}-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 
+          storage: {{ .storage_size }}
+  {{- end }}

@@ -1,0 +1,10 @@
+{{- $_ := set .Values.global "evm" (($.Files.Get "files/evm.sh").AsConfig ) -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ .Chart.Name }}-scripts
+  namespace: {{ .Chart.Name }}
+data: 
+  daemon-init.sh: |
+    {{ .Values.global.evm | indent 4 }}

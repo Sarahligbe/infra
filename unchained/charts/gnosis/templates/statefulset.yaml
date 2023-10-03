@@ -23,13 +23,13 @@ spec:
     spec:
       containers: 
         {{- range .Values.statefulset.containers }}
-        name: {{ .name }}
+      - name: {{ .name }}
         image: {{ .image }}
         {{- with .env }}
         env: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{-with .ports }}
+        {{- with .ports }}
         ports: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
@@ -41,16 +41,17 @@ spec:
         requests:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        command: {{- tpl (toYaml .command) . | nindent 10 }} 
-        {{- if or (eq .name 'daemon') (eq .name 'indexer') }}
+        command: {{- toYaml .command | nindent 10 }} 
+        {{- if or (eq .name "daemon") (eq .name "indexer") }}
         startupProbe:
           failureThreshold: 60
           periodSeconds: 30
           timeoutSeconds: 10 
+          {{- if eq .name "daemon" }}
           exec:
             command: 
-            - /startup.sh
-          {{- if eq .name 'indexer' }}
+            - '/startup.sh'
+          {{- else }}
           httpGet:
             path: '/api/v2'
             port: 8001
@@ -59,10 +60,11 @@ spec:
           failureThreshold: 5
           periodSeconds: 30
           timeoutSeconds: 10
+          {{- if eq .name "daemon" }}
           exec:
             command: 
-            - /liveness.sh
-          {{- if eq .name 'indexer' }}
+            - '/liveness.sh'
+          {{- else }}
           httpGet:
             path: '/api/v2'
             port: 8001
@@ -74,9 +76,9 @@ spec:
           timeoutSeconds: 10
           exec:
             command: 
-            - /readiness.sh
+            - '/readiness.sh'
         volumeMounts:
-        - name: data-{{ $.Values.name }}
+        - name: {{ $.Chart.Name }}-{{ .name }}-data
           mountPath: {{ default "/data" .dataDir }}
         - name: {{ $.Values.name }}
           mountPath: '/readiness.sh'
@@ -87,11 +89,11 @@ spec:
         - name: {{ $.Values.name }}
           mountPath: '/liveness.sh'
           subPath: {{ .name }}-liveness.sh
-        {{- if eq .name 'daemon' }}
+        {{- if eq .name "daemon" }}
         - name: {{ $.Values.name }}
           mountPath: '/init.sh'
           subPath: {{ .name }}-init.sh
-        {{- else if ne .name 'indexer' }}
+        {{- else if ne .name "indexer" }}
         - name: {{ $.Values.name }}
           mountPath: '/jwt.hex'
           subPath: 'jwt.hex'
@@ -99,22 +101,21 @@ spec:
         - name: {{ $.Values.name }}
           mountPath: '/indexer-config.json'
           subPath: 'indexer-config.json'
-        {{ end }}
-        {{ end }}
+        {{- end }}
+      {{- end }}
     terminationGracePeriodSeconds: 600
     volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName:  
       - name: {{ .Values.name }}
         configMap:
           name: {{ .Chart.Name }}-scripts
           defaultMode: 0775
   volumeClaimTemplates:
+  {{- range .Values.statefulset.containers }}
   - metadata:
-      name: 
+      name: {{ $.Chart.Name }}-{{ .name }}-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
-          storage: 
+          storage: {{ .storage_size }}
+  {{- end }}

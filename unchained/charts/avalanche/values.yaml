@@ -29,6 +29,8 @@ statefulset:
   containers:
     - name: daemon
       image: "avaplatform/avalanchego:v1.10.9"
+      command:
+        - '/init.sh'
       limits:
         cpu: 2
         memory: 12Gi
