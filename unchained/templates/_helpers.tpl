@@ -125,24 +125,16 @@ spec:
     {{- include "unchained.statefulsetLabels" . | nindent 4 }}
 {{- end }}
 
-{{/*
-Default Template for tendermint script. All Sub-Charts under this Chart can include the below template.
-*/}}
-{{- define "unchained.tendermint" }}
-{{ $.Files.Get "files/tendermint.sh" }}
-{{- end }}
 
 {{/*
-Default Template for evm script. All Sub-Charts under this Chart can include the below template.
+Default Template for ConfigMaps. All Sub-Charts under this Chart can include the below template.
 */}}
-{{- define "unchained.evm" }}
-{{ $.Files.Get "files/evm.sh" }}
+{{- define "unchained.configmap" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ .Chart.Name }}-scripts
+  namespace: {{ .Chart.Name }}
+data: {{ (.Files.Glob "files/*").AsConfig | nindent 2 }}
 {{- end }}
-
-{{/*
-Default Template for indexer-readiness script. All Sub-Charts under this Chart can include the below template.
-*/}}
-{{- define "unchained.indexerReadiness" }}
-{{ $.Files.Get "files/indexer-readiness.sh" }}
-{{- end }}
-
