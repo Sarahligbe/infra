@@ -58,7 +58,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Chart.Name }}-api-svc
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
   labels:
     {{- include "unchained.apiLabels" . | nindent 4 }}
 spec:
@@ -81,7 +81,7 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ .Chart.Name }}-hpa
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
 spec:
   minReplicas: 2
   maxReplicas: 6
@@ -107,7 +107,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Chart.Name }}-svc
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
   labels:
     {{- include "unchained.statefulsetLabels" . | nindent 4 }}
 spec:
@@ -125,7 +125,6 @@ spec:
     {{- include "unchained.statefulsetLabels" . | nindent 4 }}
 {{- end }}
 
-
 {{/*
 Default Template for ConfigMaps. All Sub-Charts under this Chart can include the below template.
 */}}
@@ -135,6 +134,92 @@ apiVersion: v1
 kind: ConfigMap
 metadata: 
   name: {{ .Chart.Name }}-scripts
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
 data: {{ (.Files.Glob "files/*").AsConfig | nindent 2 }}
+{{- end }}
+
+{{/*
+Default Template for VolumeReaperRole. All Sub-Charts under this Chart can include the below template.
+*/}}
+{{- define "unchained.volumereaperrole" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: {{ .Release.Name }}
+  name: {{ .Chart.Name }}-volume-reaper-role
+rules:
+- apiGroups: ["apps"] 
+  resources: ["*"]
+  verbs: ["get", "watch", "list", "update"]
+- apiGroups: ["snapshot.storage.k8s.io"] 
+  resources: ["volumesnapshots"]
+  verbs: ["get", "watch", "list", "update", "create", "delete"]
+{{- end }}
+
+{{/*
+Default Template for VolumeReaperJob. All Sub-Charts under this Chart can include the below template.
+*/}}
+{{- define "unchained.volumereaperjob" }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Chart.Name }}-volume-reaper-job
+  namespace: {{ .Release.Name }}
+spec:
+  schedule: {{ .Values.global.backupSchedule }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: 'Forbid'
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: {{ .Chart.Name }}-sa
+          containers:
+          - name: {{ .Chart.Name }}-volume-reaper
+            image: 'shapeshiftdao/unchained-volume-reaper:latest'
+            args:
+            - -n
+            - {{ .Release.Name }}
+            - -s
+            - {{ .Chart.Name }}-svc
+            - -a
+            - {{ .Chart.Name }}
+            - -c
+            - {{ .Values.global.backupCount }}
+          restartPolicy: Never
+{{- end }}
+
+{{/*
+Default Template for VolumeReaperRoleBinding. All Sub-Charts under this Chart can include the below template.
+*/}}
+{{- define "unchained.volumereaperrolebinding" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Chart.Name }}-volume-reaper-role-binding
+  namespace: {{ .Release.Name }}
+subjects:
+- kind: "ServiceAccount"
+  name: {{ .Chart.Name }}-sa
+  apiGroup: ''
+roleRef:
+  kind: Role
+  name: {{ .Chart.Name }}-volume-reaper-role
+  apiGroup: ''
+{{- end }}
+
+{{/*
+Default Template for ServiceAccount. All Sub-Charts under this Chart can include the below template.
+*/}}
+{{- define "unchained.serviceaccount" }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Chart.Name }}-sa
+  namespace: {{ .Release.Name }}
 {{- end }}

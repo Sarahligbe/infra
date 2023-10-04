@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
   name: {{ .Chart.Name }}-{{ .Values.api.tier }}
   labels:
     {{- include "unchained.apiLabels" . | nindent 4 }}
@@ -13,7 +13,7 @@ spec:
   replicas: {{ .Values.api.replicas }}
   template:
     metadata:
-      namespace: {{ .Chart.Name }}
+      namespace: {{ .Release.Name }}
       labels: 
         {{- include "unchained.apiLabels" . | nindent 4 }}
     spec:

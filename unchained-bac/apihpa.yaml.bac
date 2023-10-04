@@ -3,7 +3,7 @@ apiVersion: autoscaling/v1
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ .Chart.Name }}-hpa
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
 spec:
   minReplicas: 2
   maxReplicas: 6

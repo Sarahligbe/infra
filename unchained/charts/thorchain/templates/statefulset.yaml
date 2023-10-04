@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: {{ .Chart.Name }}-sts
-  namespace: {{ .Chart.Name }}
+  namespace: {{ .Release.Name }}
   labels: 
     {{- include "unchained.statefulsetLabels" . | nindent 4 }}
 spec:
@@ -17,7 +17,7 @@ spec:
     type: 'RollingUpdate'
   template:
     metadata:
-      namespace: {{ .Chart.Name }}
+      namespace: {{ .Release.Name }}
       labels:
         {{- include "unchained.statefulsetLabels" . | nindent 8 }}
     spec:
