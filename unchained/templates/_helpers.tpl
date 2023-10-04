@@ -77,7 +77,7 @@ Default Template for API HorizontalPodAutoscaler. All Sub-Charts under this Char
 */}}
 {{- define "unchained.apihpa" }}
 {{- if eq .Values.api.autoscaling true }}
-apiVersion: autoscaling/v1
+apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: {{ .Chart.Name }}-hpa
@@ -89,13 +89,13 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ .Chart.Name }}-{{ .Values.api.tier }}
-    metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 75
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
 {{- end }}
 {{- end }}
 
@@ -182,13 +182,13 @@ spec:
             image: 'shapeshiftdao/unchained-volume-reaper:latest'
             args:
             - -n
-            - {{ .Release.Name }}
+            - "{{ .Release.Name }}"
             - -s
-            - {{ .Chart.Name }}-svc
+            - "{{ .Chart.Name }}-svc"
             - -a
-            - {{ .Chart.Name }}
+            - "{{ .Chart.Name }}"
             - -c
-            - {{ .Values.global.backupCount }}
+            - "{{ .Values.global.backupCount }}"
           restartPolicy: Never
 {{- end }}
 

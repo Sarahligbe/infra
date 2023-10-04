@@ -21,6 +21,7 @@ spec:
       labels:
         {{- include "unchained.statefulsetLabels" . | nindent 8 }}
     spec:
+      terminationGracePeriodSeconds: 600
       containers:
       {{- range .Values.statefulset.containers }}
       - name: {{ .name }}
@@ -35,14 +36,15 @@ spec:
         ports: 
           {{- toYaml . | nindent 10 }}
         {{- end }}
-        {{- with .limits }}
-        limits:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
-        {{- with .requests }}
-        requests:
-          {{- toYaml . | nindent 10 }}
-        {{- end }}
+        resources:
+          {{- with .limits }}
+          limits:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .requests }}
+          requests:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
         startupProbe:
           failureThreshold: 60
           periodSeconds: 30
@@ -120,16 +122,15 @@ spec:
           mountPath: '/dev/shm'
         {{- end }}
       {{- end }}
-    terminationGracePeriodSeconds: 600
-    volumes:
-      - name: {{ .Values.name }}
-        configMap:
-          name: {{ .Chart.Name }}-scripts
-          defaultMode: 0775
-      - name: 'dshm'
-        emptyDir: 
-          medium: 'Memory'
-          sizeLimit: 1Gi
+      volumes:
+        - name: {{ .Values.name }}
+          configMap:
+            name: {{ .Chart.Name }}-scripts
+            defaultMode: 0775
+        - name: 'dshm'
+          emptyDir: 
+            medium: 'Memory'
+            sizeLimit: 1Gi
   volumeClaimTemplates:
   {{- range .Values.statefulset.containers }}
   - metadata:
