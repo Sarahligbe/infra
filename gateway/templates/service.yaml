@@ -23,6 +23,9 @@ spec:
       targetPort: http
       protocol: TCP
       name: http
+    - port: 443
+      targetPort: https
+      name: https
     {{- if .Values.validator }}
     - port: {{ .Values.service.port.sentinel.api }}
       targetPort: sentinel-api

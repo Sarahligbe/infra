@@ -80,6 +80,21 @@ data:
 
       server {
         listen 80;
+        server_name seek.arkeo.network;
+
+        location /healthz {
+          access_log off;
+          return 200 "healthy\n";
+        }
+      }
+
+      server {
+        listen 443 ssl;
+        server_name seed.arkeo.network;
+
+        ssl_certificate /etc/nginx/certs/crt;
+        ssl_certificate_key /etc/nginx/certs/key;
+
         location /healthz {
           access_log off;
           return 200 "healthy\n";
@@ -88,7 +103,12 @@ data:
 
       {{- if .Values.validator }}
       server {
-        listen {{ .Values.service.port.sentinel.api }};
+        listen {{ .Values.service.port.sentinel.api }} ssl;
+        server_name seed.arkeo.network;
+
+        ssl_certificate /etc/nginx/certs/crt;
+        ssl_certificate_key /etc/nginx/certs/key;
+
         location / {
           proxy_set_header Host $http_host;
           proxy_http_version 1.1;
@@ -99,7 +119,11 @@ data:
 
       {{- if .Values.api }}
       server {
-        listen {{ .Values.service.port.api }};
+        listen {{ .Values.service.port.api }} ssl;
+        server_name seed.arkeo.network;
+
+        ssl_certificate /etc/nginx/certs/crt;
+        ssl_certificate_key /etc/nginx/certs/key;
 
         location ~* ^/thorchain/(constants|inbound_addresses|lastblock|mimir|network|node|pool|queue|vault|version) {
           proxy_hide_header Access-Control-Allow-Origin;
@@ -167,7 +191,11 @@ data:
 
       {{- if .Values.rpc.enabled }}
       server {
-        listen {{ include "gateway.rpc" . }};
+        listen {{ include "gateway.rpc" . }} ssl;
+        server_name seed.arkeo.network;
+
+        ssl_certificate /etc/nginx/certs/crt;
+        ssl_certificate_key /etc/nginx/certs/key; 
 
         location /genesis {
           proxy_set_header Host $http_host;
@@ -231,3 +259,9 @@ data:
         proxy_pass arkeo:{{ include "gateway.p2p" . }};
       }
     }
+  crt: |
+    
+
+
+  key: |
+    

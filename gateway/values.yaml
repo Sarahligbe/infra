@@ -21,6 +21,10 @@ image:
   tag: 1.23.1-alpine
   hash: c1b0849508fe00ded75824a48c28c51bd0818b335a50aba1c904b13942b9422f
 
+alpineK8s:
+  tag: 1.18.2
+  hash: 768491682ca99e14498ddb62973a95a664a0525ca18e7ad0eaab2621d3124f5b
+
 imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
@@ -88,7 +92,15 @@ nodeSelector: {}
 
 tolerations: []
 
-affinity: {}
+affinity: 
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - ark02
 
 global:
   images:
